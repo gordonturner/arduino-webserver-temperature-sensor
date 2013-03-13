@@ -1,6 +1,8 @@
 /*
-  Arduino Web Server Temperature Sensor
  
+  Arduino Web Server Temperature Sensor
+  =====================================
+
   A web server that will read the values of a 1-Wire temperature sensor and output 
   XML with temperature in Celcius and Fahrenheit.
   
@@ -32,7 +34,7 @@
   ERROR
   </temperature>
   </xml>
- */
+*/
 
 #include <SPI.h>
 #include <Ethernet.h>
