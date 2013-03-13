@@ -46,7 +46,7 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
 // 1-Wire sensor address, use OneWireAddressFinder to find.
-DeviceAddress insideThermometer = { 0x28, 0xAE, 0xC1, 0x3A, 0x04, 0x00, 0x00, 0x73 };
+DeviceAddress outsideThermometer = { 0x28, 0xAE, 0xC1, 0x3A, 0x04, 0x00, 0x00, 0x73 };
 
 // Ethernet Shield MAC address, use value on back of shield.
 byte mac[] = { 0x90, 0xA2, 0xDA, 0x0D, 0x10, 0x5A };
@@ -70,7 +70,7 @@ void setup()
   sensors.begin();
   
   // Set the resolution to 10 bit.
-  sensors.setResolution(insideThermometer, 10);
+  sensors.setResolution(outsideThermometer, 10);
   
   //Serial.println("Setting up Ethernet");
 
@@ -118,7 +118,9 @@ void loop()
           client.println("<xml>");
           
           sensors.requestTemperatures();
-          float tempC = sensors.getTempC(insideThermometer);
+          float tempC = sensors.getTempC(outsideThermometer);
+          
+          // TODO: When sensor removed, -127.00 is not returned, need to update error state detection.
           
           if (tempC == -127.00) 
           {
