@@ -65,33 +65,33 @@ IPAddress ip(192,168,2,70);
 EthernetServer server(80);
 
 
-// NOTE: Serial debugging code has been disabled.
+// NOTE: //Serial debugging code has been disabled.
 
 void setup() 
 {
-  // Open serial communications and wait for port to open.
-  Serial.begin(9600);
-  Serial.println("Setting up Sensor");
+  // Open //Serial communications and wait for port to open.
+  //Serial.begin(9600);
+  //Serial.println("Setting up Sensor");
  
    // Start the sensor library.
   sensors.begin();
   
   if( sensors.getDeviceCount() == 0 )
   {
-    Serial.println("Error, no sensors found.");
+    //Serial.println("Error, no sensors found.");
   }
   
   // Set the resolution to 10 bit.
   sensors.setResolution(outsideThermometer, 10);
   
-  Serial.println("Setting up Ethernet");
+  //Serial.println("Setting up Ethernet");
 
   // Start the Ethernet connection and the server.
   Ethernet.begin(mac, ip);
   server.begin();
   
-  Serial.print("Server is at ");
-  Serial.println(Ethernet.localIP());
+  //Serial.print("Server is at ");
+  //Serial.println(Ethernet.localIP());
 }
 
 
@@ -102,7 +102,7 @@ void loop()
   
   if (client) 
   {
-    Serial.println("Client connected");
+    //Serial.println("Client connected");
   
     // An http request ends with a blank line.
     boolean currentLineIsBlank = true;
@@ -112,14 +112,14 @@ void loop()
       if (client.available()) 
       {
         char c = client.read();
-        Serial.write(c);
+        //Serial.write(c);
       
         // If you've gotten to the end of the line (received a newline
         // character) and the line is blank, the http request has ended,
         // so you can send a reply.
         if (c == '\n' && currentLineIsBlank) 
         {
-           Serial.println("Sending response");
+           //Serial.println("Sending response");
             
           // Send a standard http response header.
           client.println("HTTP/1.1 200 OK");
@@ -134,7 +134,7 @@ void loop()
           
           if( sensors.getDeviceCount() == 0 )
           {
-            Serial.println("Error, no sensors found.");
+            //Serial.println("Error, no sensors found.");
             
             client.print("<temperature>");
             client.print("ERROR");
@@ -142,10 +142,10 @@ void loop()
           }
           else 
           {
-            Serial.print("C: ");
-            Serial.println(tempC);
-            Serial.print("F: ");
-            Serial.println(DallasTemperature::toFahrenheit(tempC));
+            //Serial.print("C: ");
+            //Serial.println(tempC);
+            //Serial.print("F: ");
+            //Serial.println(DallasTemperature::toFahrenheit(tempC));
             
             client.print("<temperature>");
             client.print("<celcius>");
@@ -182,7 +182,7 @@ void loop()
     // Close the connection:
     client.stop();
     
-    Serial.println("Client disonnected");
+    //Serial.println("Client disonnected");
   }
 }
 
