@@ -1,5 +1,4 @@
 /*
- 
   Arduino Web Server Temperature Sensor
   =====================================
 
@@ -34,6 +33,7 @@
   ERROR
   </temperature>
   </xml>
+  
 */
 
 #include <SPI.h>
@@ -70,23 +70,28 @@ EthernetServer server(80);
 void setup() 
 {
   // Open serial communications and wait for port to open.
-  //Serial.begin(9600);
-  //Serial.println("Setting up Sensor");
+  Serial.begin(9600);
+  Serial.println("Setting up Sensor");
  
-   // Start up the library.
+   // Start the sensor library.
   sensors.begin();
+  
+  if( sensors.getDeviceCount() == 0 )
+  {
+    Serial.println("Error, no sensors found.");
+  }
   
   // Set the resolution to 10 bit.
   sensors.setResolution(outsideThermometer, 10);
   
-  //Serial.println("Setting up Ethernet");
+  Serial.println("Setting up Ethernet");
 
   // Start the Ethernet connection and the server.
   Ethernet.begin(mac, ip);
   server.begin();
   
-  //Serial.print("Server is at ");
-  //Serial.println(Ethernet.localIP());
+  Serial.print("Server is at ");
+  Serial.println(Ethernet.localIP());
 }
 
 
@@ -97,7 +102,7 @@ void loop()
   
   if (client) 
   {
-    //Serial.println("Client connected");
+    Serial.println("Client connected");
   
     // An http request ends with a blank line.
     boolean currentLineIsBlank = true;
@@ -107,14 +112,14 @@ void loop()
       if (client.available()) 
       {
         char c = client.read();
-        //Serial.write(c);
+        Serial.write(c);
       
         // If you've gotten to the end of the line (received a newline
         // character) and the line is blank, the http request has ended,
         // so you can send a reply.
         if (c == '\n' && currentLineIsBlank) 
         {
-           //Serial.println("Sending response");
+           Serial.println("Sending response");
             
           // Send a standard http response header.
           client.println("HTTP/1.1 200 OK");
@@ -127,11 +132,9 @@ void loop()
           sensors.requestTemperatures();
           float tempC = sensors.getTempC(outsideThermometer);
           
-          // TODO: When sensor removed, -127.00 is not returned, need to update error state detection.
-          
-          if (tempC == -127.00) 
+          if( sensors.getDeviceCount() == 0 )
           {
-            //Serial.println("Error getting temperature");
+            Serial.println("Error, no sensors found.");
             
             client.print("<temperature>");
             client.print("ERROR");
@@ -139,10 +142,10 @@ void loop()
           }
           else 
           {
-            //Serial.print("C: ");
-            //Serial.println(tempC);
-            //Serial.print("F: ");
-            //Serial.println(DallasTemperature::toFahrenheit(tempC));
+            Serial.print("C: ");
+            Serial.println(tempC);
+            Serial.print("F: ");
+            Serial.println(DallasTemperature::toFahrenheit(tempC));
             
             client.print("<temperature>");
             client.print("<celcius>");
@@ -179,7 +182,7 @@ void loop()
     // Close the connection:
     client.stop();
     
-    //Serial.println("Client disonnected");
+    Serial.println("Client disonnected");
   }
 }
 
