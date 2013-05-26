@@ -53,7 +53,7 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
 // 1-Wire sensor address, use OneWireAddressFinder to find.
-DeviceAddress outsideThermometer = { 0x28, 0xAE, 0xC1, 0x3A, 0x04, 0x00, 0x00, 0x73 };
+DeviceAddress outsideThermometer = { 0x28, 0x85, 0x95, 0x3A, 0x04, 0x00, 0x00, 0xB7 };
 
 // Ethernet Shield MAC address, use value on back of shield.
 byte mac[] = { 0x90, 0xA2, 0xDA, 0x0D, 0x10, 0x5A };
@@ -63,6 +63,11 @@ IPAddress ip(192,168,2,70);
 
 // Initialize the Ethernet server library, use port 80 for HTTP.
 EthernetServer server(80);
+
+// String for reading from client
+String request = String(100);
+String parsedRequest = "";
+
 
 
 // NOTE: Serial debugging code has been disabled.
@@ -115,52 +120,79 @@ void loop()
       if (client.available()) 
       {
         char c = client.read();
-        Serial.write(c);
+        
+        // Read http request.
+        if (request.length() < 100) 
+        {
+          request += c; 
+        } 
       
         // If you've gotten to the end of the line (received a newline
         // character) and the line is blank, the http request has ended,
         // so you can send a reply.
         if (c == '\n' && currentLineIsBlank) 
         {
-           Serial.println("Sending response");
-            
-          // Send a standard http response header.
-          client.println("HTTP/1.1 200 OK");
-          client.println("Content-Type: text/xml");
-          client.println("Connnection: close");
-          client.println();
-          client.println("<?xml version=\"1.0\"?>");
-          client.println("<xml>");
+          Serial.println("Finished reading request.");
+          Serial.println("http request: '" + request + "'");
           
-          sensors.requestTemperatures();
-          float tempC = sensors.getTempC(outsideThermometer);
+          // Response looks like:
+          // GET /?format=JSONP HTTP/1.1
+          // Host: 192.168.2.70
+          // User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X
+
+          if (request.startsWith("GET /?format=")) 
+          {
+            parsedRequest = request.substring(request.indexOf('format=')+1, request.indexOf("HTTP")-1);
+            Serial.println("Parsed request: '" + parsedRequest + "'");
+          }
+          
+          
+          
+          Serial.println("Reading sensor."); 
+          
+          float celsius;
+          float fahrenheit;
+          String error = "";
           
           if( sensors.isConnected(outsideThermometer) )
           {
+            sensors.requestTemperatures();
+            celsius = sensors.getTempC(outsideThermometer);
+            fahrenheit = sensors.getTempF(outsideThermometer);
+          
             Serial.print("C: ");
-            Serial.println(tempC);
+            Serial.println(celsius);
             Serial.print("F: ");
-            Serial.println(DallasTemperature::toFahrenheit(tempC));
-            
-            client.print("<temperature>");
-            client.print("<celcius>");
-            client.print(tempC);
-            client.print("</celcius>");
-            client.print("<fahrenheit>");
-            client.print(DallasTemperature::toFahrenheit(tempC));
-            client.print("</fahrenheit>");
-            client.println("</temperature>");
+            Serial.println(fahrenheit);
           }
           else
           {
-            Serial.println("Error, no sensors found.");
-            
-            client.print("<temperature>");
-            client.print("ERROR");
-            client.println("</temperature>");
+            error = "Error reading sensors";
+            Serial.println(error);
           }
           
-          client.println("</xml>");
+          
+          if( parsedRequest == "XML" )
+          {
+             sendXmlResponse(client, celsius, fahrenheit, error);
+          }
+          else if(parsedRequest.startsWith("JSONP"))
+          {
+            // Parse callback arguement.
+            String callback = parsedRequest.substring(parsedRequest.indexOf('callback=')+1, parsedRequest.length());
+            callback = callback.substring(0, callback.indexOf('&'));
+            
+            Serial.println("Using callback: " + callback);
+            
+            sendJsonpResponse(client, celsius, fahrenheit, error, callback);
+          }
+          else
+          {
+            // Default to JSON.
+            sendJsonResponse(client, celsius, fahrenheit, error);
+          }
+          
+          
           break;
         }
         
@@ -187,6 +219,147 @@ void loop()
     
     Serial.println("Client disonnected");
   }
+  
+  // Reset the request.
+  request = "";
+  parsedRequest = "";
 }
 
+
+/*
+ *
+ */
+void sendXmlResponse(EthernetClient client, float celsius, float fahrenheit, String error)
+{
+  if(error == "")
+  {
+    Serial.println("Sending XML response.");
+    
+    // Send a standard http response header.
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-Type: text/xml");
+    client.println("Connnection: close");
+    client.println();
+    
+    // Send XML body.
+    client.println("<?xml version=\"1.0\"?>");
+    client.println("<xml>");
+    client.print("<temperature>");
+    client.print("<celcius>");
+    client.print(celsius);
+    client.print("</celcius>");
+    client.print("<fahrenheit>");
+    client.print(fahrenheit);
+    client.print("</fahrenheit>");
+    client.println("</temperature>");            
+    client.println("</xml>");
+  }
+  else
+  {
+    Serial.println("Sending XML error response.");
+    
+    // Send a standard http response header.
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-Type: text/xml");
+    client.println("Connnection: close");
+    client.println();
+    
+    // Send XML body.
+    client.println("<?xml version=\"1.0\"?>");
+    client.println("<xml>");  
+    client.print("<temperature>");
+    client.print(error);
+    client.println("</temperature>");        
+    client.println("</xml>");            
+  }
+}
+
+
+/*
+ *
+ */
+void sendJsonpResponse(EthernetClient client, float celsius, float fahrenheit, String error, String callback)
+{
+  
+  if(error == "")
+  {
+    Serial.println("Sending JSONP response.");
+    
+    // Send a standard http response header.
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-Type: application/json");
+    client.println("Connnection: close");
+    client.println();
+    
+    // Send JSONP body.
+    client.println(callback + "({");
+    client.println("  \"temperature\": {");
+    client.print("    \"celcius\": ");
+    client.print(celsius);
+    client.println(",");
+    client.print("    \"fahrenheit\": ");
+    client.println(fahrenheit);
+    client.println("  }");
+    client.println("});");
+  }
+  else
+  {
+    Serial.println("Sending JSONP error response.");
+    
+    // Send a standard http response header.
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-Type: application/json");
+    client.println("Connnection: close");
+    client.println();
+    
+    // Send JSONP body.
+    client.println(callback + "({");
+    client.println("  \"error\": \"" + error + "\"");
+    client.println("})");     
+  }
+}
+
+
+/*
+ *
+ */
+void sendJsonResponse(EthernetClient client, float celsius, float fahrenheit, String error)
+{
+  if(error == "")
+  {
+    Serial.println("Sending JSON response.");
+    
+    // Send a standard http response header.
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-Type: application/json");
+    client.println("Connnection: close");
+    client.println();
+    
+    // Send JSON body.
+    client.println("{");
+    client.println("  \"temperature\": {");
+    client.print("    \"celcius\": ");
+    client.print(celsius);
+    client.println(",");
+    client.print("    \"fahrenheit\": ");
+    client.println(fahrenheit);
+    client.println("  }");
+    client.println("}");
+  }
+  else
+  {
+    Serial.println("Sending JSON error response.");
+    
+    // Send a standard http response header.
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-Type: application/json");
+    client.println("Connnection: close");
+    client.println();
+    
+    // Send JSON body.
+    client.println("{");
+    client.println("  \"error\": \"" + error + "\"");        
+    client.println("}");            
+  }
+}
 
