@@ -1,5 +1,5 @@
-Arduino Web Server Temperature Sensor
-=====================================
+Arduino Webserver Temperature Sensor
+====================================
 
 A web server that will read the values of a 1-Wire temperature sensor and output 
 XML, JSON and JSONP with temperature in Celcius and Fahrenheit.
