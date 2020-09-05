@@ -143,11 +143,13 @@ void loop()
           if (request.startsWith("GET /?format=")) 
           {
             parsedRequest = request.substring(request.indexOf('format=')+1, request.indexOf("HTTP")-1);
-            Serial.println("Parsed request: '" + parsedRequest + "'");
           }
-          
-          
-          
+          else if (request.startsWith("GET /metrics"))
+          {
+            parsedRequest = "prometheus";
+          }
+
+          Serial.println("Parsed request: '" + parsedRequest + "'");
           Serial.println("Reading sensor."); 
           
           float celsius;
@@ -176,7 +178,7 @@ void loop()
           {
              sendXmlResponse(client, celsius, fahrenheit, error);
           }
-          else if(parsedRequest.startsWith("JSONP"))
+          else if( parsedRequest.startsWith("JSONP") )
           {
             // Parse callback arguement.
             String callback = parsedRequest.substring(parsedRequest.indexOf('callback=')+1, parsedRequest.length());
@@ -185,6 +187,10 @@ void loop()
             Serial.println("Using callback: " + callback);
             
             sendJsonpResponse(client, celsius, fahrenheit, error, callback);
+          }
+          else if( parsedRequest == "prometheus" )
+          {
+            sendPrometheusResponse(client, celsius, error);
           }
           else
           {
@@ -323,6 +329,40 @@ void sendJsonpResponse(EthernetClient client, float celsius, float fahrenheit, S
 /*
  *
  */
+void sendPrometheusResponse(EthernetClient client, float celsius, String error)
+{
+  if(error == "")
+  {
+    Serial.println("Sending Prometheus response.");
+    
+    // Send a standard http response header.
+    client.println("HTTP/1.1 200 OK");
+
+    // Content-Type from https://github.com/siimon/prom-client/blob/master/lib/registry.js
+    // 'text/plain; version=0.0.4; charset=utf-8'
+    client.println("Content-Type: text/plain; version=0.0.4; charset=utf-8");
+    client.println("Connnection: close");
+    client.println();
+    
+    // Send Prometheus body.
+    client.print("arduino_temperature_probe ");
+    client.print(celsius);
+  }
+  else
+  {
+    Serial.println("Sending Prometheus error response.");
+    
+    // Send a standard http response header.
+    client.println("HTTP/1.1 500 Internal Server Error");
+    client.println("Connnection: close");
+    client.println();   
+  }
+}
+
+
+/*
+ *
+ */
 void sendJsonResponse(EthernetClient client, float celsius, float fahrenheit, String error)
 {
   if(error == "")
@@ -362,4 +402,3 @@ void sendJsonResponse(EthernetClient client, float celsius, float fahrenheit, St
     client.println("}");            
   }
 }
-

@@ -1,8 +1,7 @@
-Arduino Webserver Temperature Sensor
-====================================
+# Arduino Webserver Temperature Sensor
 
 A web server that will read the values of a 1-Wire temperature sensor and output 
-XML, JSON and JSONP with temperature in Celcius and Fahrenheit.
+XML, JSON, JSONP or Prometheus prom format with temperature in Celcius and Fahrenheit.
 
 - Adapted by Gordon Turner from code by David A. Mellis and Tom Igoe.
 
@@ -14,9 +13,11 @@ XML, JSON and JSONP with temperature in Celcius and Fahrenheit.
     http://www.pjrc.com/teensy/arduino_libraries/OneWire.zip
     http://milesburton.com/Dallas_Temperature_Control_Library#Latest
 
-- Send format parameter for XML, JSON or JSONP (with extra callback parameter).
+- Send format parameter for XML, JSON, JSONP (with extra callback parameter) or Prometheus prom format.
 - Defaults to JSON.
 
+
+## XML
 
 - Sample XML request URL:
 
@@ -50,6 +51,8 @@ ERROR
 ```
 
 
+## JSON
+
 - Sample JSON request URL:
 
     http://192.168.2.70/?format=JSON
@@ -75,6 +78,8 @@ ERROR
 }
 ```
 
+
+## JSONP
 
 - Sample JSONP request URL:
 
@@ -102,3 +107,23 @@ MyCallback({
 ```
 
 
+## Prometheus
+
+http://192.168.2.70/metric
+
+```
+arduino_temperature_probe 20.00
+```
+
+NOTE: Error state will return a HTTP 500.
+
+NOTE: As per Prometheus best practices, only Celcius is returned.
+
+Config for `prometheus.yml`:
+
+```
+  - job_name: 'External Ambient Temperature Monitor'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['192.168.2.70:80']
+```
