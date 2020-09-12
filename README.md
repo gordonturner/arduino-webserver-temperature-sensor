@@ -1,7 +1,6 @@
 # Arduino Webserver Temperature Sensor
 
-A web server that will read the values of a 1-Wire temperature sensor and output 
-XML, JSON, JSONP or Prometheus prom format with temperature in Celcius and Fahrenheit.
+Arduino web server using an Ethernet Shield and 1-Wire temperature sensor to output XML, JSON, JSONP or Prometheus (prom format) response.
 
 - Adapted by Gordon Turner from code by David A. Mellis and Tom Igoe.
 
