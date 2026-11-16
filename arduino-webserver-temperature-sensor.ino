@@ -59,7 +59,7 @@ DeviceAddress outsideThermometer = { 0x28, 0x85, 0x95, 0x3A, 0x04, 0x00, 0x00, 0
 byte mac[] = { 0x90, 0xA2, 0xDA, 0x0D, 0x10, 0x5A };
 
 // IP address, will depend on your local network.
-IPAddress ip(192,168,2,70);
+IPAddress ip(192,168,1,70);
 
 // Initialize the Ethernet server library, use port 80 for HTTP.
 EthernetServer server(80);
